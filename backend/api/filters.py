@@ -5,20 +5,20 @@ from recipes.models import Recipe, Tag
 
 class RecipeFilter(FilterSet):
     tags = filters.ModelMultipleChoiceFilter(
-        field_name="tags__slug",
-        to_field_name="slug",
+        field_name='tags__slug',
+        to_field_name='slug',
         queryset=Tag.objects.all(),
     )
-    is_favorited = filters.BooleanFilter(method="is_favorited_filter")
+    is_favorited = filters.BooleanFilter(method='is_favorited_filter')
     is_in_shopping_cart = filters.BooleanFilter(
-        method="is_in_shopping_cart_filter"
+        method='is_in_shopping_cart_filter'
     )
 
     class Meta:
         model = Recipe
         fields = (
-            "tags",
-            "author",
+            'tags',
+            'author',
         )
 
     def is_favorited_filter(self, queryset, name, value):
@@ -35,4 +35,4 @@ class RecipeFilter(FilterSet):
 
 
 class IngredientFilter(FilterSet):
-    name = CharFilter(field_name="name", lookup_expr="icontains")
+    name = CharFilter(field_name='name', lookup_expr='icontains')

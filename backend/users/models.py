@@ -1,19 +1,8 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db import models
 
 
 class User(AbstractUser):
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
-
-    email = models.EmailField(
-        verbose_name='Адрес электронной почты',
-        unique=True,
-        error_messages={
-            'unique': 'Данный адрес уже используется',
-        },
-    )
 
     username = models.CharField(
         verbose_name='Имя пользователя',
@@ -22,6 +11,15 @@ class User(AbstractUser):
             'unique': 'Пользователь с таким именем уже существует',
         },
         max_length=150,
+    )
+
+    email = models.EmailField(
+        verbose_name='Адрес электронной почты',
+        unique=True,
+        error_messages={
+            'unique': 'Данный адрес уже используется',
+        },
+        max_length=254,
     )
 
     first_name = models.CharField(
@@ -41,6 +39,9 @@ class User(AbstractUser):
         null=True,
     )
 
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
+
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
@@ -51,35 +52,33 @@ class User(AbstractUser):
 
 
 class Subscribe(models.Model):
-    """Модель подписок."""
+    '''Модель подписок.'''
 
     subscriber = models.ForeignKey(
         User,
-        # CustomUser,
         on_delete=models.CASCADE,
-        related_name="subscriber",
-        help_text="Подписчик автора",
+        related_name='subscriber',
+        help_text='Подписчик автора',
     )
     author = models.ForeignKey(
         User,
-        # CustomUser,
         on_delete=models.CASCADE,
-        related_name="subscribing",
-        help_text="Автор",
+        related_name='subscribing',
+        help_text='Автор',
     )
 
     class Meta:
-        verbose_name = "Подписка"
-        verbose_name_plural = "Подписки"
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
         constraints = (
             models.UniqueConstraint(
-                fields=("subscriber", "author"), name="unique_follow"
+                fields=('subscriber', 'author'), name='unique_follow'
             ),
             models.CheckConstraint(
-                check=~models.Q(subscriber=models.F("author")),
-                name="self_follow",
+                check=~models.Q(subscriber=models.F('author')),
+                name='self_follow',
             )
         )
 
     def __str__(self):
-        return f"{self.subscriber} подписался на {self.author}"
+        return f'{self.subscriber} подписался на {self.author}'

@@ -6,3 +6,4 @@ django-colorfield==0.10.1
 django-filter==2.3.0
 drf-base64==2.0
 Pillow==9.0.0
+django-link-shortener==0.5

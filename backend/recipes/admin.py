@@ -1,20 +1,3 @@
-# from django.contrib import admin
-# from .models import Ingredient, Tag, Recipe
-
-# admin.site.register(Tag)
-# admin.site.register(Ingredient)
-# admin.site.register(Recipe)
-
-# @admin.register(Tag)
-# class TagAdmin(admin.ModelAdmin):
-#     """Админка тэгов."""
-
-#     list_display = ("name", "color", "slug")
-#     list_editable = ("color", "slug")
-#     list_display_links = ("name",)
-#     search_fields = ("name", "slug")
-#     empty_value_display = "-пусто-
-
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 from import_export import resources
@@ -30,53 +13,52 @@ class IngredientResource(resources.ModelResource):
 
 
 @admin.register(Ingredient)
-# class IngredientAdmin(ImportExportModelAdmin):
-class IngredientAdmin(admin.ModelAdmin):
-    """Админка ингредиентов."""
+class IngredientAdmin(ImportExportModelAdmin):
+    '''Админка ингредиентов.'''
 
-    list_display = ("name", "measurement_unit")
-    list_filter = ("name",)
-    search_fields = ("name",)
-    # resource_class = IngredientResource
+    list_display = ('name', 'measurement_unit')
+    list_filter = ('name',)
+    search_fields = ('name',)
+    resource_class = IngredientResource
 
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    """Админка тэгов."""
+    '''Админка тэгов.'''
 
-    list_display = ("name", "color", "slug")
-    list_editable = ("color", "slug")
-    list_display_links = ("name",)
-    search_fields = ("name", "slug")
-    empty_value_display = "-пусто-"
+    list_display = ('name', 'color', 'slug')
+    list_editable = ('color', 'slug')
+    list_display_links = ('name',)
+    search_fields = ('name', 'slug')
+    empty_value_display = '-пусто-'
 
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    """Админка рецетов."""
+    '''Админка рецетов.'''
 
     list_display = (
-        "name",
-        "cooking_time",
-        "text",
-        "author",
-        "ingredients_list",
-        "favorites_count",
-        "image",
+        'name',
+        'cooking_time',
+        'text',
+        'author',
+        'ingredients_list',
+        'favorites_count',
+        'image',
     )
     list_editable = (
-        "cooking_time",
-        "text",
-        "image",
-        "author",
+        'cooking_time',
+        'text',
+        'image',
+        'author',
     )
-    list_display_links = ("name",)
-    list_filter = ("name",)
-    search_fields = ("name", "author")
-    empty_value_display = "-пусто-"
+    list_display_links = ('name',)
+    list_filter = ('name',)
+    search_fields = ('name', 'author')
+    empty_value_display = '-пусто-'
 
     def ingredients_list(self, obj):
-        return ", ".join(
+        return ', '.join(
             (str(ingredient) for ingredient in obj.ingredients.all())
         )
 
@@ -84,37 +66,37 @@ class RecipeAdmin(admin.ModelAdmin):
         return obj.recipe_favorites.count()
 
     def image(self, obj):
-        return mark_safe(f'<img src={obj.image.url} width="80" height="60">')
+        return mark_safe(f"<img src={obj.image.url} width='80' height='60'>")
 
 
 @admin.register(RecipeIngredient)
 class RecipeIngredientsAdmin(admin.ModelAdmin):
-    """Админка ингридиентов для рецепта."""
+    '''Админка ингридиентов для рецепта.'''
 
-    list_display = ("recipe", "ingredient", "amount")
-    search_fields = ("recipe",)
-    empty_value_display = "-пусто-"
+    list_display = ('recipe', 'ingredient', 'amount')
+    search_fields = ('recipe',)
+    empty_value_display = '-пусто-'
 
 
 @admin.register(ShoppingCart)
 class ShoppingCartListAdmin(admin.ModelAdmin):
-    """Админка корзины."""
+    '''Админка корзины.'''
 
     list_display = (
-        "user",
-        "recipe",
+        'user',
+        'recipe',
     )
-    search_fields = ("recipe",)
-    empty_value_display = "-пусто-"
+    search_fields = ('recipe',)
+    empty_value_display = '-пусто-'
 
 
 @admin.register(Favorite)
 class FavouriteAdmin(admin.ModelAdmin):
-    """Админка избранного."""
+    '''Админка избранного.'''
 
     list_display = (
-        "user",
-        "recipe",
+        'user',
+        'recipe',
     )
-    search_fields = ("recipe", "user")
-    empty_value_display = "-пусто-"
+    search_fields = ('recipe', 'user')
+    empty_value_display = '-пусто-'
