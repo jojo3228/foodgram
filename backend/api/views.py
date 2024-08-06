@@ -255,17 +255,23 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_link(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
         full_url = request.build_absolute_uri(recipe.get_absolute_url())
-        user = request.user if request.user.is_authenticated else User.objects.first()
+        if request.user.is_authenticated:
+            user = request.user
+        else:
+            User.objects.first()
         try:
             shortcode = create(user, full_url)
         except PermissionError as e:
-            return Response({'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'error': str(e)},
+                            status=status.HTTP_403_FORBIDDEN)
         except KeyError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': str(e)},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         short_url = request.build_absolute_uri(f'/s/{shortcode}/')
 
-        return Response({'short_url': short_url}, status=status.HTTP_201_CREATED)
+        return Response({'short_url': short_url},
+                        status=status.HTTP_201_CREATED)
 
 
 class AvatarViewSet(viewsets.ModelViewSet):
