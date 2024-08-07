@@ -1,10 +1,8 @@
 import pyshorteners
 
 from http import HTTPStatus
-from venv import create
 
 from django.db.models import Sum
-from django.utils import timezone
 from django.http import HttpResponse
 from djoser.views import UserViewSet
 from backend.settings import FILE_NAME
@@ -273,4 +271,5 @@ class ShortLinkViewSet(viewsets.ViewSet):
     def shorten(request, url):
         shortener = pyshorteners.Shortener()
         shortened_url = shortener.chilpit.short(url)
-        return HttpResponse(f'Shortened URL: <a href="{shortened_url}">{shortened_url}</a>')
+        return HttpResponse(
+            f'Shortened URL: <a href="{shortened_url}">{shortened_url}</a>')
