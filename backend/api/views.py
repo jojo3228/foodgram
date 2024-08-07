@@ -1,4 +1,7 @@
+import pyshorteners
+
 from http import HTTPStatus
+from venv import create
 
 from django.db.models import Sum
 from django.utils import timezone
@@ -17,7 +20,7 @@ from api.serializers import (UserAvatarSerializer, IngredientSerializer,
                              RecipeSmallSerializer, RecipeIngredient)
 from api.pagination import PageLimitPagination
 from recipes.models import (Favorite, Ingredient, Recipe,
-                            ShoppingCart, Tag, ShortLink)
+                            ShoppingCart, Tag)
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -267,27 +270,7 @@ class UserAvatarViewSet(viewsets.ModelViewSet):
 
 
 class ShortLinkViewSet(viewsets.ViewSet):
-    @action(
-        methods=['GET'],
-        detail=True,
-        permission_classes=[AllowAny],
-        url_path='get-link'
-    )
-    def get_link(self, request, pk=None):
-        recipe = get_object_or_404(Recipe, pk=pk)
-        full_url = request.build_absolute_uri(recipe.get_absolute_url())
-        user = request.user if request.user.is_authenticated else None
-
-        existing_url = ShortLink.objects.filter(full_url=full_url,
-                                                user=user).first()
-        if existing_url:
-            if (existing_url.max_count != -1
-                and existing_url.usage_count >= existing_url.max_count) or \
-               (existing_url.lifespan != -1
-                and existing_url.date_expired < timezone.now()):
-                existing_url.delete()
-            else:
-                short_url = request.build_absolute_uri(
-                    f'/s/{existing_url.short_url}/')
-                return Response({'short_url': short_url},
-                                status=status.HTTP_200_OK)
+    def shorten(request, url):
+        shortener = pyshorteners.Shortener()
+        shortened_url = shortener.chilpit.short(url)
+        return HttpResponse(f'Shortened URL: <a href="{shortened_url}">{shortened_url}</a>')

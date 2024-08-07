@@ -1,5 +1,4 @@
 from colorfield.fields import ColorField
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import validators
 from django.db import models
@@ -168,19 +167,3 @@ class ShoppingCart(models.Model):
 
     def __str__(self):
         return f'{self.user} добавил {self.recipe} в корзину'
-
-
-class ShortLink(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.CASCADE,
-                             null=True, blank=True)
-    full_url = models.TextField()
-    short_url = models.CharField(max_length=50, unique=True, db_index=True)
-    usage_count = models.IntegerField(default=0)
-    max_count = models.IntegerField(default=-1)
-    lifespan = models.IntegerField(default=-1)
-    date_created = models.DateTimeField(auto_now_add=True)
-    date_expired = models.DateTimeField()
-
-    def str(self):
-        return '{} - {}'.format(self.user, self.full_url)
