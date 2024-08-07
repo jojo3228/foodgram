@@ -225,41 +225,46 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, obj):
         tags = obj.get('tags', [])
-        unique_tags = set(tags)
-
-        if len(tags) != len(unique_tags):
+        if len(tags) != len(set(tags)):
             raise serializers.ValidationError('Теги должны быть уникальными.')
-        for field in ['name', 'text', 'cooking_time']:
+
+        required_fields = {'name': 'Название рецепта',
+                           'text': 'Описание',
+                           'cooking_time': 'Время приготовления'}
+        for field, field_name in required_fields.items():
             if not obj.get(field):
                 raise serializers.ValidationError(
-                    f'{field} - Обязательное поле.'
-                )
-        if not obj.get('tags'):
-            raise serializers.ValidationError('Нужно указать минимум 1 тег.')
-        if not obj.get('ingredients'):
+                    f'{field_name} - Обязательное поле.')
+
+        if not tags:
             raise serializers.ValidationError(
-                'Нужно указать минимум 1 ингредиент.'
-            )
-        inrgedient_id_list = [item['id'] for item in obj.get('ingredients')]
-        unique_ingredient_id_list = set(inrgedient_id_list)
-        if len(inrgedient_id_list) != len(unique_ingredient_id_list):
+                'Должен быть указан минимум 1 тег.')
+
+        ingredients = obj.get('ingredients', [])
+        if not ingredients:
             raise serializers.ValidationError(
-                'Ингредиенты должны быть уникальны.'
-            )
+                'Должен быть указан минимум 1 ингредиент.')
+
+        ingredient_ids = [ingredient['id'] for ingredient in ingredients]
+        if len(ingredient_ids) != len(set(ingredient_ids)):
+            raise serializers.ValidationError(
+                'Ингредиенты должны быть уникальными.')
+
         return obj
 
     def tags_and_ingredients_set(self, recipe, tags, ingredients):
         recipe.tags.set(tags)
-        RecipeIngredient.objects.bulk_create(
-            [
-                RecipeIngredient(
-                    recipe=recipe,
-                    ingredient=ingredient.get('id'),
-                    amount=ingredient.get('amount'),
-                )
-                for ingredient in ingredients
-            ]
-        )
+
+        ingredients_to_add = [
+            RecipeIngredient(
+                recipe=recipe,
+                ingredient=ingredient_data['id'],
+                amount=ingredient_data['amount'],
+            )
+            for ingredient_data in ingredients
+        ]
+
+        RecipeIngredient.objects.bulk_create(ingredients_to_add)
 
     def create(self, validated_data):
         tags = validated_data.pop('tags')

@@ -1,6 +1,7 @@
 from http import HTTPStatus
-from venv import create
+
 from django.db.models import Sum
+from django.utils import timezone
 from django.http import HttpResponse
 from djoser.views import UserViewSet
 from backend.settings import FILE_NAME
@@ -15,7 +16,8 @@ from api.serializers import (UserAvatarSerializer, IngredientSerializer,
                              SubscribeSerializer, FavoriteSerializer,
                              RecipeSmallSerializer, RecipeIngredient)
 from api.pagination import PageLimitPagination
-from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
+from recipes.models import (Favorite, Ingredient, Recipe,
+                            ShoppingCart, Tag, ShortLink)
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -36,18 +38,6 @@ class UserViewSet(UserViewSet):
     def me(self, request):
         serializer = UserReadSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(
-        detail=False,
-        methods=('put', 'delete',),
-        permission_classes=(IsAuthenticated,),
-        url_path='me/avatar',
-    )
-    def avatar(self, request):
-        user = request.user
-        file = request.data.get('avatar')
-        user.avatar = file
-        user.save()
 
     @action(
         detail=False,
@@ -184,99 +174,120 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     @action(
-        ('post', 'delete'),
+        methods=['post', 'delete'],
         detail=True,
-        permission_classes=(IsAuthenticated,),
+        permission_classes=[IsAuthenticated],
     )
-    def shopping_cart(self, request, **kwargs):
-        recipe = get_object_or_404(Recipe, id=kwargs['pk'])
+    def shopping_cart(self, request, pk=None):
+        recipe = get_object_or_404(Recipe, id=pk)
 
         if request.method == 'POST':
             serializer = RecipeSmallSerializer(
                 recipe, data=request.data, context={'request': request}
             )
             serializer.is_valid(raise_exception=True)
-            if not ShoppingCart.objects.filter(
-                user=request.user, recipe=recipe
-            ).exists():
+            if not ShoppingCart.objects.filter(user=request.user,
+                                               recipe=recipe).exists():
                 ShoppingCart.objects.create(user=request.user, recipe=recipe)
-                return Response(
-                    serializer.data, status=status.HTTP_201_CREATED
-                )
+                return Response(serializer.data,
+                                status=status.HTTP_201_CREATED)
             return Response(
-                {'errors': 'Рецепт уже в списке покупок.'},
-                status=status.HTTP_400_BAD_REQUEST,
+                {'errors': 'Рецепт уже добавлен в список покупок.'},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-        get_object_or_404(
-            ShoppingCart, user=request.user, recipe=recipe
-        ).delete()
+        shopping_cart_item = get_object_or_404(ShoppingCart,
+                                               user=request.user,
+                                               recipe=recipe)
+        shopping_cart_item.delete()
         return Response(
-            {'detail': 'Рецепт успешно удален из списка покупок.'},
-            status=status.HTTP_204_NO_CONTENT,
+            {'detail': 'Рецепт удален из списка покупок.'},
+            status=status.HTTP_204_NO_CONTENT
         )
 
     @action(
         detail=False,
-        methods=('get',),
-        permission_classes=(IsAuthenticated,),
+        methods=['get'],
+        permission_classes=[IsAuthenticated],
     )
     def download_shopping_cart(self, request, **kwargs):
-        ingredients = (
-            RecipeIngredient.objects.filter(
-                recipe__shopping_recipe__user=request.user
-            )
-            .select_related('ingredient')
-            .annotate(total_amount=Sum('amount'))
-            .values_list(
-                'ingredient__name',
-                'total_amount',
-                'ingredient__measurement_unit',
-            )
+        ingredients = RecipeIngredient.objects.filter(
+            recipe__shopping_recipe__user=request.user
+        ).select_related('ingredient').annotate(
+            total_amount=Sum('amount')
+        ).values_list(
+            'ingredient__name', 'total_amount', 'ingredient__measurement_unit'
         )
-        file_list = []
-        [
-            file_list.append('{} - {} {}.'.format(*ingredient))
-            for ingredient in ingredients
+
+        shopping_list = [
+            f"{name} - {amount} {unit}."
+            for name, amount, unit in ingredients
         ]
-        file = HttpResponse(
-            'Cписок покупок:\n' + '\n'.join(file_list),
-            content_type='text/plain',
-        )
-        file['Content-Disposition'] = f'attachment; filename={FILE_NAME}'
-        return file
+
+        response_content = 'Список покупок:\n' + '\n'.join(shopping_list)
+        response = HttpResponse(response_content, content_type='text/plain')
+        response['Content-Disposition'] = f'attachment; filename={FILE_NAME}'
+
+        return response
+
+
+class UserAvatarViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserAvatarSerializer
+    permission_classes = [IsAuthorOrReadOnly]
+
+    def get_queryset(self):
+        return User.objects.filter(id=self.request.user.id)
+
+    def update(self, request, *args, **kwargs):
+        partial = request.method == 'PATCH'
+        serializer = self.get_serializer(self.get_object(),
+                                         data=request.data,
+                                         partial=partial)
+        if serializer.is_valid():
+            self.perform_update(serializer)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(
-        methods=('GET',),
+        detail=False,
+        methods=('put', 'delete',),
+        url_path='me/avatar/',
+    )
+    def avatar(self, request):
+        user = request.user
+        if 'avatar' in request.data:
+            file = request.data['avatar']
+            user.avatar = file
+            user.save()
+            return Response({'status': 'avatar updated'},
+                            status=status.HTTP_200_OK)
+        return Response({'error': 'No avatar provided'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+
+class ShortLinkViewSet(viewsets.ViewSet):
+    @action(
+        methods=['GET'],
         detail=True,
-        permission_classes=(AllowAny,),
-        url_path='get_link'
+        permission_classes=[AllowAny],
+        url_path='get-link'
     )
     def get_link(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
         full_url = request.build_absolute_uri(recipe.get_absolute_url())
-        if request.user.is_authenticated:
-            user = request.user
-        else:
-            User.objects.first()
-        try:
-            shortcode = create(user, full_url)
-        except PermissionError as e:
-            return Response({'error': str(e)},
-                            status=status.HTTP_403_FORBIDDEN)
-        except KeyError as e:
-            return Response({'error': str(e)},
-                            status=status.HTTP_400_BAD_REQUEST)
+        user = request.user if request.user.is_authenticated else None
 
-        short_url = request.build_absolute_uri(f'/s/{shortcode}/')
-
-        return Response({'short_url': short_url},
-                        status=status.HTTP_201_CREATED)
-
-
-class AvatarViewSet(viewsets.ModelViewSet):
-    serializer_class = UserAvatarSerializer
-    permission_classes = (IsAuthorOrReadOnly,)
-
-    def get_object(self):
-        return self.request.user
+        existing_url = ShortLink.objects.filter(full_url=full_url,
+                                                user=user).first()
+        if existing_url:
+            if (existing_url.max_count != -1
+                and existing_url.usage_count >= existing_url.max_count) or \
+               (existing_url.lifespan != -1
+                and existing_url.date_expired < timezone.now()):
+                existing_url.delete()
+            else:
+                short_url = request.build_absolute_uri(
+                    f'/s/{existing_url.short_url}/')
+                return Response({'short_url': short_url},
+                                status=status.HTTP_200_OK)
