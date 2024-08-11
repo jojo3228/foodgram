@@ -42,6 +42,29 @@ class UserViewSet(UserViewSet):
 
     @action(
         detail=False,
+        methods=('put', 'delete',),
+        url_path='me/avatar',
+        permission_classes=(IsAuthenticated,),
+    )
+    def me_avatar(self, request):
+        user = self.get_instance()
+        if request.method == 'PUT':
+            serializer = UserAvatarSerializer(instance=user, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(data=serializer.data,
+                                status=status.HTTP_200_OK)
+            return Response(data=serializer.errors,
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == 'DELETE':
+            if user.avatar:
+                user.avatar.delete()
+                user.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(
+        detail=False,
         methods=('get',),
         permission_classes=(IsAuthenticated,),
         pagination_class=PageLimitPagination,
@@ -93,9 +116,15 @@ class UserViewSet(UserViewSet):
                     serializer.data, status=status.HTTP_201_CREATED
                 )
 
-        get_object_or_404(
-            Subscribe, subscriber=request.user, author=author
-        ).delete()
+        subscription = Subscribe.objects.filter(subscriber=request.user,
+                                                author=author).first()
+        if not subscription:
+            return Response(
+                {'detail': 'Вы не подписаны на этого пользователя.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        subscription.delete()
         return Response(
             {'detail': 'Успешная отписка'}, status=status.HTTP_204_NO_CONTENT
         )
@@ -166,7 +195,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if not Favorite.objects.filter(user=user, recipe=recipe).exists():
             return Response(
                 'Рецепта нет в избранном.',
-                status=HTTPStatus.NOT_FOUND,
+                status=HTTPStatus.BAD_REQUEST,
             )
         Favorite.objects.filter(user=user, recipe=recipe).delete()
         return Response(
@@ -180,7 +209,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def shopping_cart(self, request, pk=None):
-        recipe = get_object_or_404(Recipe, id=pk)
+        recipe = get_object_or_404(Recipe, pk=pk)
 
         if request.method == 'POST':
             serializer = RecipeSmallSerializer(
@@ -197,14 +226,22 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        shopping_cart_item = get_object_or_404(ShoppingCart,
-                                               user=request.user,
-                                               recipe=recipe)
-        shopping_cart_item.delete()
-        return Response(
-            {'detail': 'Рецепт удален из списка покупок.'},
-            status=status.HTTP_204_NO_CONTENT
-        )
+        if request.method == 'DELETE':
+            shopping_cart_item = ShoppingCart.objects.filter(
+                user=request.user, recipe=recipe
+            ).first()
+
+            if shopping_cart_item:
+                shopping_cart_item.delete()
+                return Response(
+                    {'detail': 'Рецепт удален из списка покупок.'},
+                    status=status.HTTP_204_NO_CONTENT
+                )
+
+            return Response(
+                {'errors': 'Рецепт отсутствует в списке покупок.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(
         detail=False,
@@ -231,45 +268,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         return response
 
-
-class UserAvatarViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserAvatarSerializer
-    permission_classes = [IsAuthorOrReadOnly]
-
-    def get_queryset(self):
-        return User.objects.filter(id=self.request.user.id)
-
-    def update(self, request, *args, **kwargs):
-        partial = request.method == 'PATCH'
-        serializer = self.get_serializer(self.get_object(),
-                                         data=request.data,
-                                         partial=partial)
-        if serializer.is_valid():
-            self.perform_update(serializer)
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
     @action(
-        detail=False,
-        methods=('put', 'delete',),
-        url_path='me/avatar/',
+        methods=('GET',),
+        detail=True,
+        permission_classes=(AllowAny,),
+        url_path='get-link'
     )
-    def avatar(self, request):
-        user = request.user
-        if 'avatar' in request.data:
-            file = request.data['avatar']
-            user.avatar = file
-            user.save()
-            return Response({'status': 'avatar updated'},
-                            status=status.HTTP_200_OK)
-        return Response({'error': 'No avatar provided'},
-                        status=status.HTTP_400_BAD_REQUEST)
+    def get_link(self, request, pk=None):
+        recipe = get_object_or_404(Recipe, pk=pk)
+        full_url = request.build_absolute_uri(f'/recipes/{recipe.pk}/')
+        s = pyshorteners.Shortener()
+        short_url = s.tinyurl.short(full_url)
 
-
-class ShortLinkViewSet(viewsets.ViewSet):
-    def shorten(request, url):
-        shortener = pyshorteners.Shortener()
-        shortened_url = shortener.chilpit.short(url)
-        return HttpResponse(
-            f'Shortened URL: <a href="{shortened_url}">{shortened_url}</a>')
+        return Response({'short-link': short_url}, status=status.HTTP_200_OK)

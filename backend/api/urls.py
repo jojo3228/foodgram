@@ -3,8 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (IngredientViewSet,
                     UserViewSet,
                     TagViewSet,
-                    RecipeViewSet,
-                    ShortLinkViewSet)
+                    RecipeViewSet)
 
 
 api_v1 = DefaultRouter()
@@ -18,5 +17,4 @@ urlpatterns = [
     path('', include(api_v1.urls)),
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.authtoken')),
-    path('shorten/<str:url>', ShortLinkViewSet, name='shorten'),
 ]

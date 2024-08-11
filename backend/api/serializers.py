@@ -340,7 +340,7 @@ class SubscribeSerializer(serializers.ModelSerializer):
 
 
 class UserAvatarSerializer(serializers.ModelSerializer):
-    avatar = Base64ImageField(required=False)
+    avatar = Base64ImageField(required=True)
 
     class Meta:
         model = User
