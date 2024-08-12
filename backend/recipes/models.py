@@ -1,19 +1,29 @@
-from colorfield.fields import ColorField
+import random
+import string
+
 from django.contrib.auth import get_user_model
 from django.core import validators
 from django.db import models
 
+import api.constants as const
+
 User = get_user_model()
 
 
+def generate_short_code(length=6):
+    return ''.join(random.choices(string.ascii_letters
+                                  + string.digits, k=length))
+
+
 class Tag(models.Model):
-    name = models.CharField('Название тега', max_length=200, unique=True)
-    color = ColorField('Цвет в HEX')
+    name = models.CharField('Название',
+                            max_length=const.tag_char_len,
+                            unique=True)
     slug = models.CharField(
-        max_length=200,
+        max_length=const.tag_char_len,
         unique=True,
         null=True,
-        verbose_name='Слаг',
+        verbose_name='Уникальный слаг',
     )
 
     class Meta:
@@ -26,8 +36,11 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
-    name = models.CharField('Название', max_length=200, null=False)
-    measurement_unit = models.CharField('Единица измерения', max_length=200)
+    name = models.CharField('Название',
+                            max_length=const.ingredient_char_len,
+                            null=False)
+    measurement_unit = models.CharField('Единица измерения',
+                                        max_length=const.measurement_char_len)
 
     class Meta:
         verbose_name = 'Ингредиент'
@@ -45,7 +58,7 @@ class Recipe(models.Model):
         related_name='recipes',
         verbose_name='Автор',
     )
-    name = models.CharField('Название рецепта', max_length=200)
+    name = models.CharField('Название', max_length=const.recipe_char_len)
     image = models.ImageField('Картинка', upload_to='recipes/', blank=True)
     text = models.TextField('Описание')
     ingredients = models.ManyToManyField(
@@ -55,16 +68,24 @@ class Recipe(models.Model):
         related_name='recipes',
     )
     tags = models.ManyToManyField(Tag, verbose_name='Теги')
-    cooking_time = models.IntegerField(
+    cooking_time = models.PositiveSmallIntegerField(
         'Время приготовления, мин',
-        validators=(validators.MinLengthValidator(1),),
+        validators=(validators.MinLengthValidator(const.min_len_validator),
+                    validators.MaxLengthValidator(const.max_len_validator,
+                                                  message='Блюдо сгорит')),
     )
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
+    short_code = models.CharField(max_length=10, blank=True, null=True)
 
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-        ordering = ('-id',)
+        ordering = ('-pub_date',)
+
+    def save(self, *args, **kwargs):
+        if not self.short_code:
+            self.short_code = generate_short_code()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -87,7 +108,9 @@ class RecipeIngredient(models.Model):
     )
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
-        validators=(validators.MinValueValidator(1),),
+        validators=(validators.MinValueValidator(const.min_len_validator),
+                    validators.MaxLengthValidator(const.max_len_validator,
+                                                  message='Нет места')),
     )
 
     class Meta:

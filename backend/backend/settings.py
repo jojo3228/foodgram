@@ -98,9 +98,6 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTH_USER_MODEL = 'users.User'
 
 DJOSER = {
-    'SERIALIZERS': {
-        'user_create': 'api.serializers.UserCreationSerializer',
-    },
     'LOGIN_FIELD': 'email',
     'HIDE_USERS': False,
     'PERMISSIONS': {

@@ -7,6 +7,18 @@ from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
 
 
+class RecipeIngredientInline(admin.TabularInline):
+    model = RecipeIngredient
+    extra = 1
+    min_num = 1
+
+
+class RecipeTagInline(admin.TabularInline):
+    model = Recipe.tags.through
+    extra = 1
+    min_num = 1
+
+
 class IngredientResource(resources.ModelResource):
     class Meta:
         model = Ingredient
@@ -26,8 +38,8 @@ class IngredientAdmin(ImportExportModelAdmin):
 class TagAdmin(admin.ModelAdmin):
     '''Админка тэгов.'''
 
-    list_display = ('name', 'color', 'slug')
-    list_editable = ('color', 'slug')
+    list_display = ('name', 'slug')
+    list_editable = ('slug',)
     list_display_links = ('name',)
     search_fields = ('name', 'slug')
     empty_value_display = '-пусто-'
@@ -56,6 +68,8 @@ class RecipeAdmin(admin.ModelAdmin):
     list_filter = ('name',)
     search_fields = ('name', 'author')
     empty_value_display = '-пусто-'
+
+    inlines = [RecipeIngredientInline, RecipeTagInline]
 
     def ingredients_list(self, obj):
         return ', '.join(
