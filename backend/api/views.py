@@ -3,7 +3,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
-from http import HTTPStatus
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -47,9 +46,9 @@ class UserCustomViewSet(UserViewSet):
     def me_avatar(self, request):
         user = self.get_instance()
         serializer = UserAvatarSerializer(instance=user, data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @me_avatar.mapping.delete
     def delete_avatar(self, request):
@@ -90,14 +89,6 @@ class UserCustomViewSet(UserViewSet):
             author, data=request.data, context={'request': request}
         )
         if serializer.is_valid(raise_exception=True):
-            if Subscribe.objects.filter(
-                subscriber=request.user, author=author
-            ).exists():
-                return Response(
-                    {'detail': 'Вы уже подписаны на этого пользователя.'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
             Subscribe.objects.create(
                 subscriber=request.user, author=author
             )
@@ -115,7 +106,7 @@ class UserCustomViewSet(UserViewSet):
             author=author
         ).delete()
 
-        if deleted_count == 0:
+        if not deleted_count:
             return Response(
                 {'detail': 'Вы не подписаны на этого пользователя.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -180,7 +171,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status=HTTPStatus.CREATED)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @favorite.mapping.delete
     def delete_favorite(self, request, pk):
@@ -188,14 +179,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, pk=pk)
         deleted_fav, _ = Favorite.objects.filter(user=user,
                                                  recipe=recipe).delete()
-        if deleted_fav == 0:
+        if not deleted_fav:
             return Response(
                 {'detail': 'Рецепта нет в избранном.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         return Response(
             'Рецепт успешно удалён из избранного.',
-            status=HTTPStatus.NO_CONTENT,
+            status=status.HTTP_204_NO_CONTENT,
         )
 
     @action(
@@ -206,20 +197,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def shopping_cart(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
 
-        if request.method == 'POST':
-            serializer = RecipeSmallSerializer(
-                recipe, data=request.data, context={'request': request}
-            )
-            serializer.is_valid(raise_exception=True)
-            if not ShoppingCart.objects.filter(user=request.user,
-                                               recipe=recipe).exists():
-                ShoppingCart.objects.create(user=request.user, recipe=recipe)
-                return Response(serializer.data,
-                                status=status.HTTP_201_CREATED)
-            return Response(
-                {'errors': 'Рецепт уже добавлен в список покупок.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer = RecipeSmallSerializer(
+            recipe, data=request.data, context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        ShoppingCart.objects.create(user=request.user, recipe=recipe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @shopping_cart.mapping.delete
     def remove_from_shopping_cart(self, request, pk=None):
@@ -228,7 +212,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             user=request.user, recipe=recipe
         ).delete()
 
-        if deleted_item == 0:
+        if not deleted_item:
             return Response(
                 {'detail': 'Рецепт отсутствует в списке покупок.'},
                 status=status.HTTP_400_BAD_REQUEST

@@ -46,6 +46,16 @@ class RecipeSmallSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
 
+    def validate(self, data):
+        request = self.context.get('request')
+        recipe = self.instance
+
+        if request and ShoppingCart.objects.filter(user=request.user,
+                                                   recipe=recipe).exists():
+            raise serializers.ValidationError('Рецепт уже добавлен.')
+
+        return data
+
 
 class FavoriteSerializer(serializers.ModelSerializer):
     '''Сериализатор для избранного.'''
@@ -179,16 +189,10 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, obj):
         tags = obj.get('tags', [])
+        ingredients = obj.get('ingredients', [])
+
         if len(tags) != len(set(tags)):
             raise serializers.ValidationError('Теги должны быть уникальными.')
-
-        required_fields = {'name': 'Название',
-                           'text': 'Описание',
-                           }
-        for field, field_name in required_fields.items():
-            if not obj.get(field):
-                raise serializers.ValidationError(
-                    f'{field_name} - Обязательное поле.')
 
         if not tags:
             raise serializers.ValidationError(
@@ -200,9 +204,14 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 'Должен быть указан минимум 1 ингредиент.')
 
         ingredient_ids = [ingredient['id'] for ingredient in ingredients]
+
         if len(ingredient_ids) != len(set(ingredient_ids)):
             raise serializers.ValidationError(
                 'Ингредиенты должны быть уникальными.')
+
+        if tags is None or ingredients is None:
+            raise serializers.ValidationError(
+                'Должны быть указаны теги и ингредиенты.')
 
         return obj
 
@@ -229,9 +238,8 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags', None)
         ingredients = validated_data.pop('ingredients', None)
         instance = super().update(instance, validated_data)
-        if tags is not None or ingredients is not None:
-            instance.ingredients.clear()
-            self.tags_and_ingredients_set(instance, tags, ingredients)
+        instance.ingredients.clear()
+        self.tags_and_ingredients_set(instance, tags, ingredients)
         return instance
 
     def to_representation(self, instance):
@@ -275,10 +283,13 @@ class SubscribeSerializer(serializers.ModelSerializer):
         return data
 
     def get_is_subscribed(self, obj):
+        request = self.context.get('request')
         user = self.context['request'].user
-        if user.is_authenticated:
-            return False
-        return Subscribe.objects.filter(subscriber=user, author=obj).exists()
+        return bool(
+            request
+            and request.user.is_authenticated
+            and Subscribe.objects.filter(subscriber=user, author=obj).exists()
+        )
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()

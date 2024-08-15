@@ -10,17 +10,11 @@ import api.constants as const
 User = get_user_model()
 
 
-def generate_short_code(length=6):
-    return ''.join(random.choices(string.ascii_letters
-                                  + string.digits, k=length))
-
-
 class Tag(models.Model):
     name = models.CharField('Название',
-                            max_length=const.tag_char_len,
-                            unique=True)
+                            max_length=const.TAG_CHAR_LEN)
     slug = models.CharField(
-        max_length=const.tag_char_len,
+        max_length=const.TAG_CHAR_LEN,
         unique=True,
         null=True,
         verbose_name='Уникальный слаг',
@@ -37,10 +31,10 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
     name = models.CharField('Название',
-                            max_length=const.ingredient_char_len,
+                            max_length=const.INGREDIENT_CHAR_LEN,
                             null=False)
     measurement_unit = models.CharField('Единица измерения',
-                                        max_length=const.measurement_char_len)
+                                        max_length=const.MEASUREMENT_CHAR_LEN)
 
     class Meta:
         verbose_name = 'Ингредиент'
@@ -58,7 +52,7 @@ class Recipe(models.Model):
         related_name='recipes',
         verbose_name='Автор',
     )
-    name = models.CharField('Название', max_length=const.recipe_char_len)
+    name = models.CharField('Название', max_length=const.RECIPE_CHAR_LEN)
     image = models.ImageField('Картинка', upload_to='recipes/', blank=True)
     text = models.TextField('Описание')
     ingredients = models.ManyToManyField(
@@ -70,21 +64,34 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(Tag, verbose_name='Теги')
     cooking_time = models.PositiveSmallIntegerField(
         'Время приготовления, мин',
-        validators=(validators.MinLengthValidator(const.min_len_validator),
-                    validators.MaxLengthValidator(const.max_len_validator,
-                                                  message='Блюдо сгорит')),
+        validators=(validators.MinValueValidator(const.MIN_LEN_VALIDATOR,
+                                                 message='Меньше минуты'),
+                    validators.MaxValueValidator(const.MAX_LEN_VALIDATOR,
+                                                 message='Блюдо сгорит')),
     )
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
-    short_code = models.CharField(max_length=10, blank=True, null=True)
+    short_code = models.CharField(max_length=const.CODE_MAX_LEN,
+                                  blank=True, null=True, unique=True)
 
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         ordering = ('-pub_date',)
 
+    @staticmethod
+    def generate_short_code(length=6):
+        return ''.join(random.choices(string.ascii_letters
+                                      + string.digits, k=length))
+
+    def generate_unique_short_code(self):
+        while True:
+            code = self.generate_short_code()
+            if not Recipe.objects.filter(short_code=code).exists():
+                return code
+
     def save(self, *args, **kwargs):
         if not self.short_code:
-            self.short_code = generate_short_code()
+            self.short_code = self.generate_unique_short_code()
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -108,9 +115,9 @@ class RecipeIngredient(models.Model):
     )
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
-        validators=(validators.MinValueValidator(const.min_len_validator),
-                    validators.MaxLengthValidator(const.max_len_validator,
-                                                  message='Нет места')),
+        validators=(validators.MinValueValidator(const.MIN_LEN_VALIDATOR),
+                    validators.MaxValueValidator(const.MAX_LEN_VALIDATOR,
+                                                 message='Нет места')),
     )
 
     class Meta:
