@@ -12,7 +12,10 @@ from api.pagination import PageLimitPagination
 from api.serializers import (UserAvatarSerializer, IngredientSerializer,
                              TagSerializer, RecipeReadSerializer,
                              RecipeCreateSerializer, UserCreateSerializer,
-                             SubscribeSerializer, FavoriteSerializer,
+                             SubscribeCreateSerializer,
+                            #  SubscribeSerializer,
+                             SubscribeDisplaySerializer,
+                             FavoriteSerializer,
                              RecipeSmallSerializer, RecipeIngredient)
 from backend.settings import FILE_NAME
 from recipes.models import (Favorite, Ingredient, Recipe,
@@ -69,7 +72,7 @@ class UserCustomViewSet(UserViewSet):
         subscribing_users = User.objects.filter(
             subscribing__in=subscriptions
         )
-        serializer = SubscribeSerializer(
+        serializer = SubscribeDisplaySerializer(
             self.paginate_queryset(subscribing_users),
             many=True,
             context={'request': request},
@@ -85,16 +88,14 @@ class UserCustomViewSet(UserViewSet):
         author_id = self.kwargs.get('id')
         author = get_object_or_404(User, id=author_id)
 
-        serializer = SubscribeSerializer(
+        serializer = SubscribeCreateSerializer(
             author, data=request.data, context={'request': request}
         )
-        if serializer.is_valid(raise_exception=True):
-            Subscribe.objects.create(
-                subscriber=request.user, author=author
-            )
-            return Response(
-                serializer.data, status=status.HTTP_201_CREATED
-            )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED
+        )
 
     @subscribe.mapping.delete
     def unsubscribe(self, request, **kwargs):

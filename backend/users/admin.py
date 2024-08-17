@@ -19,8 +19,9 @@ class UserAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-@admin.register(models.Subscribe)
-class SubscribeAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'subscriber', 'author')
-    list_editable = ('subscriber', 'author')
-    empty_value_display = '-пусто-'
+# @admin.register(models.Subscribe)
+# class SubscribeAdmin(admin.ModelAdmin):
+#     list_display = ('pk', 'subscriber', 'author')
+#     list_editable = ('subscriber', 'author')
+#     empty_value_display = '-пусто-'
+admin.site.register(models.Subscribe)
