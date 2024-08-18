@@ -13,9 +13,7 @@ from api.serializers import (UserAvatarSerializer, IngredientSerializer,
                              TagSerializer, RecipeReadSerializer,
                              RecipeCreateSerializer, UserCreateSerializer,
                              SubscribeCreateSerializer,
-                            #  SubscribeSerializer,
-                             SubscribeDisplaySerializer,
-                             FavoriteSerializer,
+                             SubscribeDisplaySerializer, FavoriteSerializer,
                              RecipeSmallSerializer, RecipeIngredient)
 from backend.settings import FILE_NAME
 from recipes.models import (Favorite, Ingredient, Recipe,
@@ -86,10 +84,14 @@ class UserCustomViewSet(UserViewSet):
     )
     def subscribe(self, request, **kwargs):
         author_id = self.kwargs.get('id')
-        author = get_object_or_404(User, id=author_id)
+        author = get_object_or_404(User, id=author_id).pk
+        data = {
+            'subscriber': request.user.pk,
+            'author': author,
+        }
 
         serializer = SubscribeCreateSerializer(
-            author, data=request.data, context={'request': request}
+            data=data, context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -98,15 +100,12 @@ class UserCustomViewSet(UserViewSet):
         )
 
     @subscribe.mapping.delete
-    def unsubscribe(self, request, **kwargs):
-        author_id = self.kwargs.get('id')
-        author = get_object_or_404(User, id=author_id)
-
+    def unsubscribe(self, request, id=None):
+        author_id = get_object_or_404(User, pk=id).pk
         deleted_count, _ = Subscribe.objects.filter(
-            subscriber=request.user,
-            author=author
+            subscriber=request.user.pk,
+            author=author_id
         ).delete()
-
         if not deleted_count:
             return Response(
                 {'detail': 'Вы не подписаны на этого пользователя.'},
