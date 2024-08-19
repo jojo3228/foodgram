@@ -10,7 +10,7 @@ from .views import (IngredientViewSet,
 api_v1 = DefaultRouter()
 api_v1.register('users', UserCustomViewSet, basename='users')
 api_v1.register('tags', TagViewSet, basename='tags')
-api_v1.register(r'ingredients', IngredientViewSet, basename='ingredients')
+api_v1.register('ingredients', IngredientViewSet, basename='ingredients')
 api_v1.register(r'recipes', RecipeViewSet, basename='recipes')
 
 

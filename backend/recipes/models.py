@@ -2,7 +2,7 @@ import random
 import string
 
 from django.contrib.auth import get_user_model
-from django.core import validators
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 import api.constants as const
@@ -64,10 +64,10 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(Tag, verbose_name='Теги')
     cooking_time = models.PositiveSmallIntegerField(
         'Время приготовления, мин',
-        validators=(validators.MinValueValidator(const.MIN_LEN_VALIDATOR,
-                                                 message='Меньше минуты'),
-                    validators.MaxValueValidator(const.MAX_LEN_VALIDATOR,
-                                                 message='Блюдо сгорит')),
+        validators=(MinValueValidator(const.MIN_LEN_VALIDATOR,
+                                      message='Меньше минуты'),
+                    MaxValueValidator(const.MAX_LEN_VALIDATOR,
+                                      message='Блюдо сгорит')),
     )
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
     short_code = models.CharField(max_length=const.CODE_MAX_LEN,
@@ -115,9 +115,10 @@ class RecipeIngredient(models.Model):
     )
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
-        validators=(validators.MinValueValidator(const.MIN_LEN_VALIDATOR),
-                    validators.MaxValueValidator(const.MAX_LEN_VALIDATOR,
-                                                 message='Нет места')),
+        validators=(MinValueValidator(const.MIN_LEN_VALIDATOR,
+                                      message='Ничего нет'),
+                    MaxValueValidator(const.MAX_LEN_VALIDATOR,
+                                      message='Нет места')),
     )
 
     class Meta:

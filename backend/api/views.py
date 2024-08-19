@@ -14,7 +14,7 @@ from api.serializers import (UserAvatarSerializer, IngredientSerializer,
                              RecipeCreateSerializer, UserCreateSerializer,
                              SubscribeCreateSerializer,
                              SubscribeDisplaySerializer, FavoriteSerializer,
-                             RecipeSmallSerializer, RecipeIngredient)
+                             ShoppingCartCreateSerializer, RecipeIngredient)
 from backend.settings import FILE_NAME
 from recipes.models import (Favorite, Ingredient, Recipe,
                             ShoppingCart, Tag)
@@ -195,14 +195,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def shopping_cart(self, request, pk=None):
-        recipe = get_object_or_404(Recipe, pk=pk)
+        user = self.request.user
+        recipe = get_object_or_404(Recipe, pk=pk).pk
 
-        serializer = RecipeSmallSerializer(
-            recipe, data=request.data, context={'request': request}
+        data = {
+            'user': user.pk,
+            'recipe': recipe,
+        }
+
+        serializer = ShoppingCartCreateSerializer(
+            data=data, context={'request': request}
         )
-        serializer.is_valid(raise_exception=True)
 
-        ShoppingCart.objects.create(user=request.user, recipe=recipe)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @shopping_cart.mapping.delete
@@ -211,7 +217,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         deleted_item, _ = ShoppingCart.objects.filter(
             user=request.user, recipe=recipe
         ).delete()
-
         if not deleted_item:
             return Response(
                 {'detail': 'Рецепт отсутствует в списке покупок.'},
