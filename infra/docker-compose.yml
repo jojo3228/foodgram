@@ -37,4 +37,3 @@ services:
       - media:/app/media
     ports:
       - 8000:80
-
