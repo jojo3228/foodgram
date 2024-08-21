@@ -37,7 +37,7 @@ services:
     image: nginx:1.25.4-alpine-slim
     container_name: foodgram-gateway
     ports:
-      - "80:80"
+      - "8000:80"
     volumes:
       - static:/var/html/static/
       - media:/var/html/media/
