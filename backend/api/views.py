@@ -235,15 +235,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request, **kwargs):
         ingredients = RecipeIngredient.objects.filter(
             recipe__shopping_recipe__user=request.user
-        ).select_related('ingredient').annotate(
-            total_amount=Sum('amount')
-        ).values_list(
-            'ingredient__name', 'total_amount', 'ingredient__measurement_unit'
+        ).values('ingredient__name', 'ingredient__measurement_unit'
+        ).annotate(total_amount=Sum('amount')
+        ).order_by(
+            'ingredient__name', 'ingredient__measurement_unit'
         )
 
         shopping_list = [
-            f"{name} - {amount} {unit}."
-            for name, amount, unit in ingredients
+            f"{item['ingredient__name']} - {item['total_amount']} {item['ingredient__measurement_unit']}."            
+            for item in ingredients
         ]
 
         response_content = 'Список покупок:\n' + '\n'.join(shopping_list)
