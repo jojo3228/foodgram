@@ -234,15 +234,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def download_shopping_cart(self, request, **kwargs):
         ingredients = RecipeIngredient.objects.filter(
-            recipe__shopping_recipe__user=request.user
-        ).values('ingredient__name', 'ingredient__measurement_unit'
-        ).annotate(total_amount=Sum('amount')
-        ).order_by(
+            recipe__shopping_recipe__user=request.user).values(
+                'ingredient__name', 'ingredient__measurement_unit').annotate(
+                    total_amount=Sum('amount')).order_by(
             'ingredient__name', 'ingredient__measurement_unit'
         )
 
         shopping_list = [
-            f"{item['ingredient__name']} - {item['total_amount']} {item['ingredient__measurement_unit']}."            
+            (f"{item['ingredient__name']} - ",
+             f"{item['total_amount']} {item['ingredient__measurement_unit']}.")
             for item in ingredients
         ]
 
