@@ -241,7 +241,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
         shopping_list = [
-            (f"{item['ingredient__name']} - ",
+            (f"{item['ingredient__name']} - "
              f"{item['total_amount']} {item['ingredient__measurement_unit']}.")
             for item in ingredients
         ]
