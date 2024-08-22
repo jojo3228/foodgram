@@ -25,25 +25,19 @@ services:
     container_name: foodgram-backend
     restart: always
 
-  # frontend:
-  #   image: jojo322/foodgram_frontend
-  #   command: cp -r /app/build/. /frontend_static/
-  #   volumes:
-  #     - ../frontend/:/app/result_build/
-  #   depends_on:
-  #     - db
-  frontend: 
-    image: jojo322/foodgram_frontend 
-    command: cp -r /app/build/. /frontend_static/ 
-    volumes: 
-      - static:/frontend_static 
-
+  frontend:
+    image: jojo322/foodgram_frontend
+    command: cp -r /app/build/. /frontend_static/
+    volumes:
+      - ../frontend/:/app/result_build/
+    depends_on:
+      - db
 
   gateway:
     image: nginx:1.25.4-alpine-slim
     container_name: foodgram-gateway
     ports:
-      - "8080:80"
+      - "8000:80"
     volumes:
       - static:/var/html/static/
       - media:/var/html/media/
