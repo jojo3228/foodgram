@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 from import_export import resources
-from import_export.admin import ImportExportModelAdmin
+# from import_export.admin import ImportExportModelAdmin
 
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
@@ -25,7 +25,7 @@ class IngredientResource(resources.ModelResource):
 
 
 @admin.register(Ingredient)
-class IngredientAdmin(ImportExportModelAdmin):
+class IngredientAdmin(admin.ModelAdmin):
     '''Админка ингредиентов.'''
 
     list_display = ('name', 'measurement_unit')
