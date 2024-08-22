@@ -34,16 +34,15 @@ services:
       - db
 
   gateway:
-    image: nginx:1.25.4-alpine-slim
+    image: jojo322/foodgram_gateway
     container_name: foodgram-gateway
     ports:
       - "8000:80"
     volumes:
       - static:/var/html/static/
       - media:/var/html/media/
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ../frontend/build:/usr/share/nginx/html/
-      - ../docs/:/usr/share/nginx/html/api/docs/
+      # - ../frontend/build:/usr/share/nginx/html/
+      # - ../docs/:/usr/share/nginx/html/api/docs/
     depends_on:
       - backend
       - frontend

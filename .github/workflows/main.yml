@@ -100,7 +100,7 @@ jobs:
       - name: Push to DockerHub
         uses: docker/build-push-action@v4
         with:
-          context: ./infra/
+          context: ./gateway/
           push: true
           tags: jojo322/foodgram_gateway:latest
 

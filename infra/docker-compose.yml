@@ -34,8 +34,7 @@ services:
       - db
 
   gateway:
-    container_name: foodgram-gateway
-    image: nginx:1.25.4-alpine-slim
+    container_name: ../gateway/
     ports:
       - "80:80"
     volumes:
