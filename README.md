@@ -88,7 +88,7 @@ sudo docker compose -f docker-compose.production.yml exec backend python manage.
 Последний шаг - создать админа. После чего зайти в админ-зону и создать хотя бы 1 тэг и 1 ингридиент:
 
 ```
-sudo docker-compose -f docker-compose.production.yml exec backend python manage.py createsuperuser
+sudo docker compose -f docker-compose.production.yml exec backend python manage.py createsuperuser
 ```
 
 ## Наполнение БД данными:

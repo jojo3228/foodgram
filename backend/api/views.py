@@ -260,5 +260,5 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def get_link(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
-        full_url = request.build_absolute_uri(f'/recipes/{recipe.short_code}/')
+        full_url = request.build_absolute_uri(f'/recipes/{recipe.short_code}')
         return Response({'short-link': full_url}, status=status.HTTP_200_OK)
