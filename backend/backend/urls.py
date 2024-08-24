@@ -6,7 +6,9 @@ from django.urls import include, path
 from api.views import redirect_link
 
 urlpatterns = [
-    path('s/TdpxkD/', redirect_link, name='redirect-link'),
+    path('s/<str:recipe_hash>/', redirect_link, name='redirect-link'),
+    # path('s/5Pfng5/', redirect_link, name='redirect-link'),
+
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
 ]

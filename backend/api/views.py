@@ -1,7 +1,7 @@
 from django.db.models import Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
@@ -30,7 +30,7 @@ from .permissions import IsAuthorOrReadOnly
 #     return redirect(f'/recipes/{pk}')
 
 def redirect_link(request, recipe_hash):
-    print(da)
+    # print(da)
     recipe = get_object_or_404(Recipe, short_code=recipe_hash)
     relative_url = '/recipes/' + str(recipe.pk) + '/'
     full_url = request.build_absolute_uri(relative_url)
