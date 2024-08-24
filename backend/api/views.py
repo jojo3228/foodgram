@@ -1,7 +1,7 @@
 from django.db.models import Sum
 from django_filters.rest_framework import DjangoFilterBackend
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, redirect
 from djoser.views import UserViewSet
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
@@ -21,6 +21,20 @@ from recipes.models import (Favorite, Ingredient, Recipe,
 from users.models import User, Subscribe
 from .filters import IngredientFilter, RecipeFilter
 from .permissions import IsAuthorOrReadOnly
+
+
+# def redirect_link(request, pk, recipe_hash):
+#     # Получаем объект рецепта, проверяя наличие по pk и short_code
+#     recipe = get_object_or_404(Recipe, pk=pk, short_code=short_code)
+#     # Перенаправляем на нужный URL
+#     return redirect(f'/recipes/{pk}')
+
+def redirect_link(request, recipe_hash):
+    print(da)
+    recipe = get_object_or_404(Recipe, short_code=recipe_hash)
+    relative_url = '/recipes/' + str(recipe.pk) + '/'
+    full_url = request.build_absolute_uri(relative_url)
+    return HttpResponseRedirect(full_url)
 
 
 class UserCustomViewSet(UserViewSet):
@@ -260,5 +274,5 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def get_link(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
-        full_url = request.build_absolute_uri(f'/recipes/{recipe.short_code}')
+        full_url = request.build_absolute_uri(f'/s/{recipe.short_code}')
         return Response({'short-link': full_url}, status=status.HTTP_200_OK)
