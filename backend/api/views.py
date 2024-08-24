@@ -23,14 +23,7 @@ from .filters import IngredientFilter, RecipeFilter
 from .permissions import IsAuthorOrReadOnly
 
 
-# def redirect_link(request, pk, recipe_hash):
-#     # Получаем объект рецепта, проверяя наличие по pk и short_code
-#     recipe = get_object_or_404(Recipe, pk=pk, short_code=short_code)
-#     # Перенаправляем на нужный URL
-#     return redirect(f'/recipes/{pk}')
-
 def redirect_link(request, recipe_hash):
-    # print(da)
     recipe = get_object_or_404(Recipe, short_code=recipe_hash)
     relative_url = '/recipes/' + str(recipe.pk) + '/'
     full_url = request.build_absolute_uri(relative_url)

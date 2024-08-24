@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.utils.safestring import mark_safe
-from import_export import resources
 
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
@@ -18,11 +17,6 @@ class RecipeTagInline(admin.TabularInline):
     min_num = 1
 
 
-class IngredientResource(resources.ModelResource):
-    class Meta:
-        model = Ingredient
-
-
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     '''Админка ингредиентов.'''
@@ -30,7 +24,6 @@ class IngredientAdmin(admin.ModelAdmin):
     list_display = ('name', 'measurement_unit')
     list_filter = ('name',)
     search_fields = ('name',)
-    resource_class = IngredientResource
 
 
 @admin.register(Tag)
