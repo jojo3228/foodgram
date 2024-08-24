@@ -102,12 +102,12 @@ sudo docker compose -f docker-compose.production.yml exec backend python manage.
 
 ## Документация:
 
-http://onlyfood.webhop.me/api/docs/
+http://localhost/api/docs/
 
 ## Примеры запросов:
 
 ```
-http://onlyfood.webhop.me/api/users/
+http://localhost/api/users/
 
 {
   "email": "vpupkin@yandex.ru",
@@ -119,7 +119,7 @@ http://onlyfood.webhop.me/api/users/
 ```
 
 ```
-http://onlyfood.webhop.me/api/recipes/{id}/
+http://localhost/api/recipes/{id}/
 
 {
   "id": 0,
